@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大鱼吃小鱼</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        h1 {
+            color: white;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .game-info {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 10px;
+            background: rgba(255,255,255,0.95);
+            padding: 12px 40px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-label {
+            color: #7f8c8d;
+        }
+
+        .info-value {
+            color: #2c3e50;
+            font-family: 'Courier New', monospace;
+            min-width: 60px;
+        }
+
+        .exp-bar {
+            width: 200px;
+            height: 20px;
+            background: #ecf0f1;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .exp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f39c12, #e67e22);
+            transition: width 0.3s;
+        }
+
+        .exp-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+            color: #2c3e50;
+        }
+
+        #gameCanvas {
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            cursor: none;
+        }
+
+        .controls {
+            margin-top: 15px;
+            color: white;
+            text-align: center;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .controls span {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 5px;
+            margin: 0 5px;
+        }
+
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .menu-content {
+            background: white;
+            padding: 40px 60px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            max-width: 500px;
+        }
+
+        .menu-content h2 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+
+        .menu-content p {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .mode-selection {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            padding: 15px 25px;
+            font-size: 14px;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            cursor: pointer;
+            background: white;
+            color: #3498db;
+            font-weight: bold;
+            transition: all 0.3s;
+            flex: 1;
+        }
+
+        .mode-btn:hover {
+            background: #3498db;
+            color: white;
+        }
+
+        .mode-btn.selected {
+            background: #3498db;
+            color: white;
+        }
+
+        .target-selection {
+            margin: 20px 0;
+            display: none;
+        }
+
+        .target-selection.show {
+            display: block;
+        }
+
+        .target-selection label {
+            display: block;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            font-weight: bold;
+        }
+
+        .target-options {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .target-btn {
+            padding: 10px 20px;
+            font-size: 13px;
+            border: 2px solid #e67e22;
+            border-radius: 5px;
+            cursor: pointer;
+            background: white;
+            color: #e67e22;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .target-btn:hover {
+            background: #e67e22;
+            color: white;
+        }
+
+        .target-btn.selected {
+            background: #e67e22;
+            color: white;
+        }
+
+        .start-btn {
+            padding: 15px 40px;
+            font-size: 18px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .start-btn:hover {
+            background: #2ecc71;
+            transform: translateY(-2px);
+        }
+
+        .game-over-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .game-over-content {
+            background: white;
+            padding: 40px 60px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        .game-over-content h2 {
+            font-size: 32px;
+            margin-bottom: 15px;
+        }
+
+        .game-over-content.lose h2 {
+            color: #e74c3c;
+        }
+
+        .game-over-content.win h2 {
+            color: #27ae60;
+        }
+
+        .stats {
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .stats p {
+            font-size: 16px;
+            color: #2c3e50;
+            margin: 8px 0;
+        }
+
+        .stats span {
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .restart-btn {
+            padding: 12px 30px;
+            font-size: 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .restart-btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <h1>🐟 大鱼吃小鱼</h1>
+
+    <div class="game-info">
+        <div class="info-item">
+            <span class="info-label">📊 等级:</span>
+            <span class="info-value" id="level">1</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">🎯 分数:</span>
+            <span class="info-value" id="score">0</span>
+        </div>
+        <div class="info-item">
+            <span class="info-label">⭐ 经验:</span>
+            <div class="exp-bar">
+                <div class="exp-fill" id="expFill" style="width: 0%"></div>
+                <span class="exp-text" id="expText">0 / 100</span>
+            </div>
+        </div>
+        <div class="info-item">
+            <span class="info-label">📏 体型:</span>
+            <span class="info-value" id="size">1.0x</span>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas" width="1000" height="600"></canvas>
+
+    <div class="controls">
+        <span>WASD / 方向键 移动</span>
+        <span>吃比自己小的鱼</span>
+        <span>躲避大鱼</span>
+    </div>
+
+    <!-- 主菜单 -->
+    <div class="menu-overlay" id="menuOverlay">
+        <div class="menu-content">
+            <h2>🐟 大鱼吃小鱼</h2>
+            <p>控制你的鱼，吃掉比你小的鱼来成长！<br>小心比你大的鱼，它们会吃掉你！</p>
+
+            <div class="mode-selection">
+                <button class="mode-btn selected" data-mode="endless">无尽模式</button>
+                <button class="mode-btn" data-mode="target">目标体型</button>
+            </div>
+
+            <div class="target-selection" id="targetSelection">
+                <label>选择目标体型：</label>
+                <div class="target-options">
+                    <button class="target-btn" data-target="3">小型 (3x)</button>
+                    <button class="target-btn selected" data-target="5">中型 (5x)</button>
+                    <button class="target-btn" data-target="8">大型 (8x)</button>
+                    <button class="target-btn" data-target="12">巨型 (12x)</button>
+                </div>
+            </div>
+
+            <button class="start-btn" onclick="startGame()">开始游戏</button>
+        </div>
+    </div>
+
+    <!-- 游戏结束 -->
+    <div class="game-over-overlay" id="gameOverOverlay">
+        <div class="game-over-content" id="gameOverContent">
+            <h2 id="gameOverTitle">游戏结束</h2>
+            <div class="stats">
+                <p>最终等级: <span id="finalLevel">1</span></p>
+                <p>最终分数: <span id="finalScore">0</span></p>
+                <p>最终体型: <span id="finalSize">1.0x</span></p>
+                <p>吃掉的鱼: <span id="fishEaten">0</span></p>
+                <p>存活时间: <span id="survivalTime">0</span>秒</p>
+            </div>
+            <button class="restart-btn" onclick="restartGame()">再来一局</button>
+        </div>
+    </div>
+
+    <script>
+        // 游戏配置
+        const CONFIG = {
+            canvasWidth: 1000,
+            canvasHeight: 600,
+            basePlayerSize: 20,
+            maxEnemies: 30,
+            spawnInterval: 1500,
+            playerSpeed: 4,
+            baseExpRequired: 100,
+            expMultiplier: 1.5
+        };
+
+        // 游戏状态
+        let gameMode = 'endless';
+        let targetSize = 5;
+        let gameRunning = false;
+        let gameTime = 0;
+        let gameInterval = null;
+        let spawnInterval = null;
+        let fishEatenCount = 0;
+
+        // 玩家
+        let player = {
+            x: CONFIG.canvasWidth / 2,
+            y: CONFIG.canvasHeight / 2,
+            size: CONFIG.basePlayerSize,
+            level: 1,
+            exp: 0,
+            expRequired: CONFIG.baseExpRequired,
+            score: 0,
+            speed: CONFIG.playerSpeed,
+            direction: 0, // 角度
+            color: '#f39c12'
+        };
+
+        // 敌人
+        let enemies = [];
+
+        // 输入
+        let keys = {};
+
+        // Canvas
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // 初始化
+        function init() {
+            setupEventListeners();
+            showMenu();
+        }
+
+        // 事件监听
+        function setupEventListeners() {
+            document.addEventListener('keydown', (e) => {
+                keys[e.key.toLowerCase()] = true;
+                if (['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(e.key.toLowerCase())) {
+                    e.preventDefault();
+                }
+            });
+
+            document.addEventListener('keyup', (e) => {
+                keys[e.key.toLowerCase()] = false;
+            });
+
+            // 模式选择
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    gameMode = btn.dataset.mode;
+
+                    const targetSelection = document.getElementById('targetSelection');
+                    if (gameMode === 'target') {
+                        targetSelection.classList.add('show');
+                    } else {
+                        targetSelection.classList.remove('show');
+                    }
+                });
+            });
+
+            // 目标选择
+            document.querySelectorAll('.target-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.target-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    targetSize = parseInt(btn.dataset.target);
+                });
+            });
+        }
+
+        // 显示菜单
+        function showMenu() {
+            document.getElementById('menuOverlay').style.display = 'flex';
+        }
+
+        // 开始游戏
+        function startGame() {
+            document.getElementById('menuOverlay').style.display = 'none';
+
+            // 重置状态
+            player = {
+                x: CONFIG.canvasWidth / 2,
+                y: CONFIG.canvasHeight / 2,
+                size: CONFIG.basePlayerSize,
+                level: 1,
+                exp: 0,
+                expRequired: CONFIG.baseExpRequired,
+                score: 0,
+                speed: CONFIG.playerSpeed,
+                direction: 0,
+                color: '#f39c12'
+            };
+
+            enemies = [];
+            keys = {};
+            gameRunning = true;
+            gameTime = 0;
+            fishEatenCount = 0;
+
+            // 初始生成一些敌人
+            for (let i = 0; i < 15; i++) {
+                spawnEnemy();
+            }
+
+            // 游戏循环
+            gameInterval = setInterval(gameLoop, 1000 / 60);
+            spawnInterval = setInterval(spawnEnemy, CONFIG.spawnInterval);
+
+            // 计时
+            setInterval(() => {
+                if (gameRunning) {
+                    gameTime++;
+                }
+            }, 1000);
+        }
+
+        // 生成敌人
+        function spawnEnemy() {
+            if (!gameRunning || enemies.length >= CONFIG.maxEnemies) return;
+
+            // 根据玩家等级调整敌人大小范围
+            const playerSizeMultiplier = player.size / CONFIG.basePlayerSize;
+            const minSize = CONFIG.basePlayerSize * 0.3;
+            const maxSize = CONFIG.basePlayerSize * Math.max(3, playerSizeMultiplier * 1.5);
+
+            const size = minSize + Math.random() * (maxSize - minSize);
+            const speed = 0.8 + Math.random() * 1.2; // 降低基础速度
+
+            // 随机位置（从边缘生成）
+            let x, y;
+            const side = Math.floor(Math.random() * 4);
+
+            switch(side) {
+                case 0: // 上
+                    x = Math.random() * CONFIG.canvasWidth;
+                    y = -size;
+                    break;
+                case 1: // 右
+                    x = CONFIG.canvasWidth + size;
+                    y = Math.random() * CONFIG.canvasHeight;
+                    break;
+                case 2: // 下
+                    x = Math.random() * CONFIG.canvasWidth;
+                    y = CONFIG.canvasHeight + size;
+                    break;
+                case 3: // 左
+                    x = -size;
+                    y = Math.random() * CONFIG.canvasHeight;
+                    break;
+            }
+
+            enemies.push({
+                x: x,
+                y: y,
+                size: size,
+                speed: speed,
+                direction: Math.random() * Math.PI * 2,
+                color: getEnemyColor(size)
+            });
+        }
+
+        // 敌人颜色
+        function getEnemyColor(size) {
+            const playerSize = player.size;
+            if (size > playerSize * 1.2) {
+                return '#e74c3c'; // 红色 - 危险
+            } else if (size < playerSize * 0.8) {
+                return '#2ecc71'; // 绿色 - 可吃
+            } else {
+                return '#f39c12'; // 黄色 - 接近
+            }
+        }
+
+        // 游戏循环
+        function gameLoop() {
+            if (!gameRunning) return;
+
+            update();
+            render();
+            updateUI();
+        }
+
+        // 更新
+        function update() {
+            // 玩家移动
+            let dx = 0, dy = 0;
+
+            if (keys['w'] || keys['arrowup']) dy -= 1;
+            if (keys['s'] || keys['arrowdown']) dy += 1;
+            if (keys['a'] || keys['arrowleft']) dx -= 1;
+            if (keys['d'] || keys['arrowright']) dx += 1;
+
+            if (dx !== 0 || dy !== 0) {
+                const length = Math.sqrt(dx * dx + dy * dy);
+                dx /= length;
+                dy /= length;
+
+                player.x += dx * player.speed;
+                player.y += dy * player.speed;
+                player.direction = Math.atan2(dy, dx);
+            }
+
+            // 边界限制
+            player.x = Math.max(player.size, Math.min(CONFIG.canvasWidth - player.size, player.x));
+            player.y = Math.max(player.size, Math.min(CONFIG.canvasHeight - player.size, player.y));
+
+            // 敌人AI
+            enemies.forEach(enemy => {
+                const dx = player.x - enemy.x;
+                const dy = player.y - enemy.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                // 行为逻辑
+                if (enemy.size > player.size * 1.1) {
+                    // 大鱼追逐
+                    enemy.x += (dx / dist) * enemy.speed * 0.8; // 降低追逐速度
+                    enemy.y += (dy / dist) * enemy.speed * 0.8;
+                    enemy.direction = Math.atan2(dy, dx);
+                } else if (enemy.size < player.size * 0.9) {
+                    // 小鱼逃跑
+                    if (dist < player.size * 5) {
+                        enemy.x -= (dx / dist) * enemy.speed * 1.2; // 降低逃跑速度
+                        enemy.y -= (dy / dist) * enemy.speed * 1.2;
+                        enemy.direction = Math.atan2(-dy, -dx);
+                    } else {
+                        // 随机游动
+                        enemy.direction += (Math.random() - 0.5) * 0.1;
+                        enemy.x += Math.cos(enemy.direction) * enemy.speed * 0.5;
+                        enemy.y += Math.sin(enemy.direction) * enemy.speed * 0.5;
+                    }
+                } else {
+                    // 同级鱼随机游动
+                    enemy.direction += (Math.random() - 0.5) * 0.1;
+                    enemy.x += Math.cos(enemy.direction) * enemy.speed * 0.5;
+                    enemy.y += Math.sin(enemy.direction) * enemy.speed * 0.5;
+                }
+
+                // 边界反弹
+                if (enemy.x < 0 || enemy.x > CONFIG.canvasWidth) {
+                    enemy.direction = Math.PI - enemy.direction;
+                    enemy.x = Math.max(0, Math.min(CONFIG.canvasWidth, enemy.x));
+                }
+                if (enemy.y < 0 || enemy.y > CONFIG.canvasHeight) {
+                    enemy.direction = -enemy.direction;
+                    enemy.y = Math.max(0, Math.min(CONFIG.canvasHeight, enemy.y));
+                }
+            });
+
+            // 碰撞检测
+            checkCollisions();
+
+            // 移除超出边界的敌人
+            enemies = enemies.filter(enemy => {
+                return enemy.x > -100 && enemy.x < CONFIG.canvasWidth + 100 &&
+                       enemy.y > -100 && enemy.y < CONFIG.canvasHeight + 100;
+            });
+
+            // 检查胜利条件（目标模式）
+            if (gameMode === 'target') {
+                const currentSizeMultiplier = player.size / CONFIG.basePlayerSize;
+                if (currentSizeMultiplier >= targetSize) {
+                    endGame(true);
+                }
+            }
+        }
+
+        // 碰撞检测
+        function checkCollisions() {
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                const enemy = enemies[i];
+                const dx = player.x - enemy.x;
+                const dy = player.y - enemy.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const minDist = player.size + enemy.size;
+
+                if (dist < minDist * 0.7) {
+                    if (player.size > enemy.size * 1.1) {
+                        // 吃掉敌人
+                        const expGain = Math.floor(enemy.size * 2);
+                        player.exp += expGain;
+                        player.score += Math.floor(enemy.size);
+
+                        // 检查升级
+                        while (player.exp >= player.expRequired) {
+                            player.exp -= player.expRequired;
+                            player.level++;
+                            player.size *= 1.15;
+                            player.speed *= 1.02;
+                            player.expRequired = Math.floor(player.expRequired * CONFIG.expMultiplier);
+                        }
+
+                        enemies.splice(i, 1);
+                        fishEatenCount++;
+
+                        // 更新所有敌人颜色
+                        enemies.forEach(e => e.color = getEnemyColor(e.size));
+                    } else if (enemy.size > player.size * 1.1) {
+                        // 被吃掉
+                        endGame(false);
+                        return;
+                    }
+                }
+            }
+        }
+
+        // 渲染
+        function render() {
+            // 清空画布
+            ctx.fillStyle = '#1a5276';
+            ctx.fillRect(0, 0, CONFIG.canvasWidth, CONFIG.canvasHeight);
+
+            // 水波纹效果
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+            for (let i = 0; i < 5; i++) {
+                const offset = (Date.now() / 1000 + i) % CONFIG.canvasWidth;
+                ctx.beginPath();
+                ctx.arc(offset, CONFIG.canvasHeight / 2, 300, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 绘制敌人
+            enemies.forEach(enemy => {
+                drawFish(enemy.x, enemy.y, enemy.size, enemy.color, enemy.direction);
+            });
+
+            // 绘制玩家
+            drawFish(player.x, player.y, player.size, player.color, player.direction, true);
+        }
+
+        // 绘制鱼
+        function drawFish(x, y, size, color, direction, isPlayer = false) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(direction);
+
+            // 身体
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, size, size * 0.6, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 尾巴
+            ctx.beginPath();
+            ctx.moveTo(-size, 0);
+            ctx.lineTo(-size * 1.5, -size * 0.5);
+            ctx.lineTo(-size * 1.5, size * 0.5);
+            ctx.closePath();
+            ctx.fill();
+
+            // 鱼鳍
+            ctx.fillStyle = isPlayer ? '#d68910' : darkenColor(color, 20);
+            ctx.beginPath();
+            ctx.ellipse(0, -size * 0.4, size * 0.3, size * 0.2, -0.3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 眼睛
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(size * 0.5, -size * 0.15, size * 0.15, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = 'black';
+            ctx.beginPath();
+            ctx.arc(size * 0.55, -size * 0.15, size * 0.08, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 玩家光环
+            if (isPlayer) {
+                ctx.strokeStyle = 'rgba(243, 156, 18, 0.5)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(0, 0, size * 1.3, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // 颜色加深
+        function darkenColor(color, percent) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.max((num >> 16) - amt, 0);
+            const G = Math.max((num >> 8 & 0x00FF) - amt, 0);
+            const B = Math.max((num & 0x0000FF) - amt, 0);
+            return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+        }
+
+        // 更新UI
+        function updateUI() {
+            document.getElementById('level').textContent = player.level;
+            document.getElementById('score').textContent = player.score;
+
+            const expPercent = (player.exp / player.expRequired) * 100;
+            document.getElementById('expFill').style.width = expPercent + '%';
+            document.getElementById('expText').textContent = `${player.exp} / ${player.expRequired}`;
+
+            const sizeMultiplier = (player.size / CONFIG.basePlayerSize).toFixed(1);
+            document.getElementById('size').textContent = sizeMultiplier + 'x';
+        }
+
+        // 游戏结束
+        function endGame(win) {
+            gameRunning = false;
+            clearInterval(gameInterval);
+            clearInterval(spawnInterval);
+
+            const overlay = document.getElementById('gameOverOverlay');
+            const content = document.getElementById('gameOverContent');
+            const title = document.getElementById('gameOverTitle');
+
+            content.className = 'game-over-content ' + (win ? 'win' : 'lose');
+            title.textContent = win ? '🎉 达成目标！' : '💀 被吃掉了！';
+
+            document.getElementById('finalLevel').textContent = player.level;
+            document.getElementById('finalScore').textContent = player.score;
+            document.getElementById('finalSize').textContent = (player.size / CONFIG.basePlayerSize).toFixed(1) + 'x';
+            document.getElementById('fishEaten').textContent = fishEatenCount;
+            document.getElementById('survivalTime').textContent = gameTime;
+
+            overlay.style.display = 'flex';
+        }
+
+        // 重新开始
+        function restartGame() {
+            document.getElementById('gameOverOverlay').style.display = 'none';
+            showMenu();
+        }
+
+        // 启动
+        init();
+    </script>
+</body>
+</html>
